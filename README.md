@@ -59,3 +59,9 @@ curl http://localhost:8080/health
 ```
 
 Open the dashboard at `http://localhost:3000`.
+
+For the complete interview walkthrough:
+
+```bash
+./scripts/demo.sh
+```
