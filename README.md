@@ -15,6 +15,10 @@ orchestration boundary.
 - **RabbitMQ**: durable work queue and event transport
 - **PostgreSQL**: workflow and result persistence
 - **Docker Compose**: reproducible local development environment
+- **Helm + Kubernetes**: local-cluster deployment packaging
+- **Terraform**: local Kind cluster provisioning
+- **Ansible**: repeatable Ubuntu VM bootstrap and Compose deployment
+- **OpenBao**: optional local secret-management demonstration
 - **Tests and observability**: health checks, structured logs, and focused automated tests
 
 ## Repository layout
@@ -26,6 +30,10 @@ apps/
   web/       Next.js dashboard
 infra/
   postgres/ Database initialization and local infrastructure notes
+  terraform/ Local Kind cluster infrastructure
+deploy/
+  helm/      Kubernetes application packaging
+  ansible/   Ubuntu VM deployment automation
 docs/        Architecture and demo walkthrough
 ```
 
@@ -65,3 +73,10 @@ For the complete interview walkthrough:
 ```bash
 ./scripts/demo.sh
 ```
+
+## Deployment examples
+
+- [Helm chart](/Users/mudmu137/dev/research-workflow-platform/deploy/helm/README.md): deploys the platform to Kubernetes.
+- [Terraform example](/Users/mudmu137/dev/research-workflow-platform/infra/terraform/README.md): provisions a local Kind cluster, not cloud infrastructure.
+- [Ansible playbook](/Users/mudmu137/dev/research-workflow-platform/deploy/ansible/README.md): prepares an Ubuntu VM and launches Docker Compose.
+- [OpenBao guide](/Users/mudmu137/dev/research-workflow-platform/docs/openbao.md): starts an explicitly local-only development secret manager.

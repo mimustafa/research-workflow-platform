@@ -1,0 +1,44 @@
+imagePullPolicy: IfNotPresent
+
+images:
+  api: research-workflow-platform-api:latest
+  worker: research-workflow-platform-worker:latest
+  web: research-workflow-platform-web:latest
+  postgres: postgres:16-alpine
+  rabbitmq: rabbitmq:3.13-management-alpine
+  openbao: openbao/openbao:2.1.1
+
+credentials:
+  postgresDatabase: research_workflows
+  postgresUser: research
+  postgresPassword: change-me-before-deploying
+  rabbitmqUser: research
+  rabbitmqPassword: change-me-before-deploying
+
+web:
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+
+api:
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 8080
+
+worker:
+  replicas: 1
+
+postgres:
+  storage: 1Gi
+
+rabbitmq:
+  storage: 1Gi
+
+openbao:
+  # Development-only server. Use a managed, initialized OpenBao/Vault instance in production.
+  enabled: false
+  rootToken: local-root-token
+  service:
+    port: 8200

@@ -1,0 +1,9 @@
+project_repository: https://github.com/mimustafa/research-workflow-platform.git
+project_version: main
+project_directory: /opt/research-workflow-platform
+
+postgres_db: research_workflows
+postgres_user: research
+postgres_password: replace-with-a-strong-password
+rabbitmq_user: research
+rabbitmq_password: replace-with-a-strong-password

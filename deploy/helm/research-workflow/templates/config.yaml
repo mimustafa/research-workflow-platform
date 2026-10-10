@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "research-workflow.fullname" . }}-postgres-init
+  labels:
+    {{- include "research-workflow.labels" . | nindent 4 }}
+data:
+  001_schema.sql: |
+    CREATE TABLE IF NOT EXISTS workflows (
+        id UUID PRIMARY KEY,
+        brief TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('queued', 'processing', 'completed', 'failed')),
+        result TEXT,
+        created_at TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS workflows_created_at_idx ON workflows (created_at DESC);
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "research-workflow.fullname" . }}-credentials
+  labels:
+    {{- include "research-workflow.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  POSTGRES_DB: {{ .Values.credentials.postgresDatabase | quote }}
+  POSTGRES_USER: {{ .Values.credentials.postgresUser | quote }}
+  POSTGRES_PASSWORD: {{ .Values.credentials.postgresPassword | quote }}
+  RABBITMQ_USER: {{ .Values.credentials.rabbitmqUser | quote }}
+  RABBITMQ_PASSWORD: {{ .Values.credentials.rabbitmqPassword | quote }}

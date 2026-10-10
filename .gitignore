@@ -213,6 +213,13 @@ out/
 # Local project planning
 docs/implementation-plan.md
 
+# Local Ansible deployment inventory and credentials
+deploy/ansible/inventory.ini
+deploy/ansible/group_vars/all.yml
+
+# Terraform working directory
+infra/terraform/.terraform/
+
 # Ruff stuff:
 .ruff_cache/
 
