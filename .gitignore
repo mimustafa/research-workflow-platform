@@ -210,6 +210,9 @@ node_modules/
 .next/
 out/
 
+# Local project planning
+docs/implementation-plan.md
+
 # Ruff stuff:
 .ruff_cache/
 
