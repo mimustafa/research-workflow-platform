@@ -1,4 +1,14 @@
 services:
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
   api:
     build:
       context: ./apps/api

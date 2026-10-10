@@ -1,0 +1,150 @@
+:root {
+  --ink: #17212b;
+  --muted: #64748b;
+  --line: #d7dee7;
+  --paper: #f7f9fc;
+  --accent: #146c94;
+  --accent-dark: #0e4f6d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: Arial, sans-serif;
+}
+
+.shell {
+  width: min(920px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 72px 0;
+}
+
+.hero {
+  margin-bottom: 36px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  max-width: 680px;
+  margin: 12px 0;
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  line-height: 1.02;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.intro {
+  max-width: 650px;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.panel {
+  margin-top: 20px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 12px 30px rgb(23 33 43 / 5%);
+}
+
+form {
+  display: grid;
+  gap: 12px;
+}
+
+label {
+  font-weight: 700;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+
+button {
+  width: fit-content;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-dark);
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.section-heading,
+.workflow-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-heading span,
+small,
+.empty {
+  color: var(--muted);
+}
+
+.workflow-list {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-list li {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.workflow-list strong,
+small {
+  display: block;
+}
+
+small {
+  margin-top: 6px;
+}
+
+.status {
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--accent-dark);
+  background: #e1f1f8;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.error {
+  color: #a33a3a;
+}

@@ -34,7 +34,20 @@ func NewHandler(logger *slog.Logger, publisher Publisher) http.Handler {
 	mux.HandleFunc("GET /health", handler.health)
 	mux.HandleFunc("GET /api/v1/workflows", handler.listWorkflows)
 	mux.HandleFunc("POST /api/v1/workflows", handler.createWorkflow)
-	return mux
+	return withCORS(mux)
+}
+
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (h *Handler) health(w http.ResponseWriter, _ *http.Request) {
