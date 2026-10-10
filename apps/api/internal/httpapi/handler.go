@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/mimustafa/research-workflow-platform/apps/api/internal/workflow"
@@ -16,20 +15,25 @@ import (
 type Handler struct {
 	logger    *slog.Logger
 	publisher Publisher
-	mu        sync.RWMutex
-	workflows []workflow.Workflow
+	store     WorkflowStore
 }
 
 type Publisher interface {
 	Publish(context.Context, workflow.Workflow) error
 }
 
+type WorkflowStore interface {
+	Create(context.Context, workflow.Workflow) error
+	List(context.Context) ([]workflow.Workflow, error)
+	MarkFailed(context.Context, string, string) error
+}
+
 type createWorkflowRequest struct {
 	Brief string `json:"brief"`
 }
 
-func NewHandler(logger *slog.Logger, publisher Publisher) http.Handler {
-	handler := &Handler{logger: logger, publisher: publisher}
+func NewHandler(logger *slog.Logger, publisher Publisher, store WorkflowStore) http.Handler {
+	handler := &Handler{logger: logger, publisher: publisher, store: store}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", handler.health)
 	mux.HandleFunc("GET /api/v1/workflows", handler.listWorkflows)
@@ -54,11 +58,13 @@ func (h *Handler) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (h *Handler) listWorkflows(w http.ResponseWriter, _ *http.Request) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	workflows := append([]workflow.Workflow(nil), h.workflows...)
+func (h *Handler) listWorkflows(w http.ResponseWriter, r *http.Request) {
+	workflows, err := h.store.List(r.Context())
+	if err != nil {
+		h.logger.Error("list workflows failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "could not list workflows")
+		return
+	}
 	if workflows == nil {
 		workflows = []workflow.Workflow{}
 	}
@@ -83,15 +89,20 @@ func (h *Handler) createWorkflow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.publisher.Publish(r.Context(), newWorkflow); err != nil {
-		h.logger.Error("publish workflow failed", "workflow_id", newWorkflow.ID, "error", err)
-		writeError(w, http.StatusServiceUnavailable, "workflow queue is unavailable")
+	if err := h.store.Create(r.Context(), newWorkflow); err != nil {
+		h.logger.Error("store workflow failed", "workflow_id", newWorkflow.ID, "error", err)
+		writeError(w, http.StatusInternalServerError, "could not store workflow")
 		return
 	}
 
-	h.mu.Lock()
-	h.workflows = append(h.workflows, newWorkflow)
-	h.mu.Unlock()
+	if err := h.publisher.Publish(r.Context(), newWorkflow); err != nil {
+		h.logger.Error("publish workflow failed", "workflow_id", newWorkflow.ID, "error", err)
+		if storeErr := h.store.MarkFailed(r.Context(), newWorkflow.ID, "workflow queue is unavailable"); storeErr != nil {
+			h.logger.Error("mark workflow failed", "workflow_id", newWorkflow.ID, "error", storeErr)
+		}
+		writeError(w, http.StatusServiceUnavailable, "workflow queue is unavailable")
+		return
+	}
 
 	writeJSON(w, http.StatusCreated, newWorkflow)
 }

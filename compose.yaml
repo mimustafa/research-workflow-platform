@@ -13,6 +13,7 @@ services:
     build:
       context: ./apps/api
     environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-research}:${POSTGRES_PASSWORD:-research_local_password}@postgres:5432/${POSTGRES_DB:-research_workflows}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-research}:${RABBITMQ_PASSWORD:-research_local_password}@rabbitmq:5672/
     ports:
       - "8080:8080"
@@ -26,8 +27,11 @@ services:
     build:
       context: ./apps/worker
     environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-research}:${POSTGRES_PASSWORD:-research_local_password}@postgres:5432/${POSTGRES_DB:-research_workflows}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-research}:${RABBITMQ_PASSWORD:-research_local_password}@rabbitmq:5672/
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 

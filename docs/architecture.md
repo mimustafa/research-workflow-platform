@@ -19,6 +19,13 @@ The first implementation will use one workflow type: **research brief generation
 Keeping one end-to-end path makes the system easy to explain in an interview while still
 demonstrating synchronous APIs, asynchronous messaging, persistence, and a frontend.
 
+Workflow state is persisted in PostgreSQL and moves through:
+
+```text
+queued -> processing -> completed
+                 \-> failed
+```
+
 ## Phase boundaries
 
 1. Repository and local infrastructure

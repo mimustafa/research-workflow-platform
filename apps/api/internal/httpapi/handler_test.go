@@ -19,6 +19,29 @@ type recordingPublisher struct {
 
 type failingPublisher struct{}
 
+type memoryStore struct {
+	workflows []workflow.Workflow
+}
+
+func (s *memoryStore) Create(_ context.Context, item workflow.Workflow) error {
+	s.workflows = append(s.workflows, item)
+	return nil
+}
+
+func (s *memoryStore) List(context.Context) ([]workflow.Workflow, error) {
+	return append([]workflow.Workflow(nil), s.workflows...), nil
+}
+
+func (s *memoryStore) MarkFailed(_ context.Context, id string, message string) error {
+	for index := range s.workflows {
+		if s.workflows[index].ID == id {
+			s.workflows[index].Status = workflow.StatusFailed
+			s.workflows[index].Result = message
+		}
+	}
+	return nil
+}
+
 func (p *recordingPublisher) Publish(_ context.Context, item workflow.Workflow) error {
 	p.workflows = append(p.workflows, item)
 	return nil
@@ -30,7 +53,7 @@ func (failingPublisher) Publish(context.Context, workflow.Workflow) error {
 
 func TestCreateAndListWorkflow(t *testing.T) {
 	publisher := &recordingPublisher{}
-	handler := NewHandler(slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil)), publisher)
+	handler := NewHandler(slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil)), publisher, &memoryStore{})
 
 	createRequest := httptest.NewRequest(http.MethodPost, "/api/v1/workflows", bytes.NewBufferString(`{"brief":"Find related studies"}`))
 	createRequest.Header.Set("Content-Type", "application/json")
@@ -63,7 +86,7 @@ func TestCreateAndListWorkflow(t *testing.T) {
 }
 
 func TestCreateWorkflowRejectsMalformedJSON(t *testing.T) {
-	handler := NewHandler(slog.Default(), &recordingPublisher{})
+	handler := NewHandler(slog.Default(), &recordingPublisher{}, &memoryStore{})
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/workflows", bytes.NewBufferString(`{"brief":`))
 	response := httptest.NewRecorder()
 
@@ -75,7 +98,8 @@ func TestCreateWorkflowRejectsMalformedJSON(t *testing.T) {
 }
 
 func TestCreateWorkflowDoesNotStoreWhenPublishFails(t *testing.T) {
-	handler := NewHandler(slog.Default(), failingPublisher{})
+	store := &memoryStore{}
+	handler := NewHandler(slog.Default(), failingPublisher{}, store)
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/workflows", bytes.NewBufferString(`{"brief":"Unpublished"}`))
 	response := httptest.NewRecorder()
 
@@ -86,7 +110,7 @@ func TestCreateWorkflowDoesNotStoreWhenPublishFails(t *testing.T) {
 	}
 	listResponse := httptest.NewRecorder()
 	handler.ServeHTTP(listResponse, httptest.NewRequest(http.MethodGet, "/api/v1/workflows", nil))
-	if listResponse.Body.String() != "[]\n" {
-		t.Fatalf("stored workflows = %s, want empty list", listResponse.Body.String())
+	if len(store.workflows) != 1 || store.workflows[0].Status != workflow.StatusFailed {
+		t.Fatalf("stored workflows = %+v, want one failed workflow", store.workflows)
 	}
 }

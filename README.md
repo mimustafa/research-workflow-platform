@@ -54,6 +54,8 @@ Default local credentials are in `.env.example` and are for development only.
 To run the current Go API in Docker:
 
 ```bash
-docker compose up --build api
+docker compose up --build
 curl http://localhost:8080/health
 ```
+
+Open the dashboard at `http://localhost:3000`.
