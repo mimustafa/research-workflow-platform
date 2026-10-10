@@ -1,0 +1,2 @@
+-- The workflow schema will be added with the Go API phase.
+-- Keeping initialization explicit makes the database lifecycle visible in the demo.
