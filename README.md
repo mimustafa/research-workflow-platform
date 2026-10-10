@@ -50,3 +50,10 @@ The initial infrastructure exposes:
 - RabbitMQ management UI on `http://localhost:15672`
 
 Default local credentials are in `.env.example` and are for development only.
+
+To run the current Go API in Docker:
+
+```bash
+docker compose up --build api
+curl http://localhost:8080/health
+```
