@@ -1,4 +1,4 @@
 # Python Worker
 
-The Python worker will consume workflow jobs from RabbitMQ and produce deterministic
-analysis results for the portfolio demonstration.
+The Python worker consumes durable workflow jobs from RabbitMQ. Result persistence and
+analysis are intentionally deferred to the integration phase.

@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -14,16 +15,21 @@ import (
 
 type Handler struct {
 	logger    *slog.Logger
+	publisher Publisher
 	mu        sync.RWMutex
 	workflows []workflow.Workflow
+}
+
+type Publisher interface {
+	Publish(context.Context, workflow.Workflow) error
 }
 
 type createWorkflowRequest struct {
 	Brief string `json:"brief"`
 }
 
-func NewHandler(logger *slog.Logger) http.Handler {
-	handler := &Handler{logger: logger}
+func NewHandler(logger *slog.Logger, publisher Publisher) http.Handler {
+	handler := &Handler{logger: logger, publisher: publisher}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", handler.health)
 	mux.HandleFunc("GET /api/v1/workflows", handler.listWorkflows)
@@ -40,6 +46,9 @@ func (h *Handler) listWorkflows(w http.ResponseWriter, _ *http.Request) {
 	defer h.mu.RUnlock()
 
 	workflows := append([]workflow.Workflow(nil), h.workflows...)
+	if workflows == nil {
+		workflows = []workflow.Workflow{}
+	}
 	writeJSON(w, http.StatusOK, workflows)
 }
 
@@ -58,6 +67,12 @@ func (h *Handler) createWorkflow(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("create workflow failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "could not create workflow")
+		return
+	}
+
+	if err := h.publisher.Publish(r.Context(), newWorkflow); err != nil {
+		h.logger.Error("publish workflow failed", "workflow_id", newWorkflow.ID, "error", err)
+		writeError(w, http.StatusServiceUnavailable, "workflow queue is unavailable")
 		return
 	}
 

@@ -2,15 +2,35 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/mimustafa/research-workflow-platform/apps/api/internal/workflow"
 )
 
+type recordingPublisher struct {
+	workflows []workflow.Workflow
+}
+
+type failingPublisher struct{}
+
+func (p *recordingPublisher) Publish(_ context.Context, item workflow.Workflow) error {
+	p.workflows = append(p.workflows, item)
+	return nil
+}
+
+func (failingPublisher) Publish(context.Context, workflow.Workflow) error {
+	return errors.New("broker unavailable")
+}
+
 func TestCreateAndListWorkflow(t *testing.T) {
-	handler := NewHandler(slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil)))
+	publisher := &recordingPublisher{}
+	handler := NewHandler(slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil)), publisher)
 
 	createRequest := httptest.NewRequest(http.MethodPost, "/api/v1/workflows", bytes.NewBufferString(`{"brief":"Find related studies"}`))
 	createRequest.Header.Set("Content-Type", "application/json")
@@ -37,10 +57,13 @@ func TestCreateAndListWorkflow(t *testing.T) {
 	if len(workflows) != 1 || workflows[0].Brief != "Find related studies" {
 		t.Fatalf("workflows = %+v, want one submitted workflow", workflows)
 	}
+	if len(publisher.workflows) != 1 {
+		t.Fatalf("published workflows = %d, want 1", len(publisher.workflows))
+	}
 }
 
 func TestCreateWorkflowRejectsMalformedJSON(t *testing.T) {
-	handler := NewHandler(slog.Default())
+	handler := NewHandler(slog.Default(), &recordingPublisher{})
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/workflows", bytes.NewBufferString(`{"brief":`))
 	response := httptest.NewRecorder()
 
@@ -48,5 +71,22 @@ func TestCreateWorkflowRejectsMalformedJSON(t *testing.T) {
 
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusBadRequest)
+	}
+}
+
+func TestCreateWorkflowDoesNotStoreWhenPublishFails(t *testing.T) {
+	handler := NewHandler(slog.Default(), failingPublisher{})
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/workflows", bytes.NewBufferString(`{"brief":"Unpublished"}`))
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusServiceUnavailable)
+	}
+	listResponse := httptest.NewRecorder()
+	handler.ServeHTTP(listResponse, httptest.NewRequest(http.MethodGet, "/api/v1/workflows", nil))
+	if listResponse.Body.String() != "[]\n" {
+		t.Fatalf("stored workflows = %s, want empty list", listResponse.Body.String())
 	}
 }

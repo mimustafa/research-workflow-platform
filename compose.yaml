@@ -2,11 +2,22 @@ services:
   api:
     build:
       context: ./apps/api
+    environment:
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-research}:${RABBITMQ_PASSWORD:-research_local_password}@rabbitmq:5672/
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./apps/worker
+    environment:
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-research}:${RABBITMQ_PASSWORD:-research_local_password}@rabbitmq:5672/
+    depends_on:
       rabbitmq:
         condition: service_healthy
 
